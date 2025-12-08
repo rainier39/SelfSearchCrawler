@@ -1,0 +1,6 @@
+# URLs of websites that the spider must never visit.
+https://www.google.com/
+https://www.bing.com/
+https://duckduckgo.com/
+https://yandex.com/
+https://search.yahoo.com/
