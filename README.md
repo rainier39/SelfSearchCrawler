@@ -3,6 +3,9 @@ This Python script is my work in progress web crawler for my work in progress se
 
 Ultimately my intention is to create a self-hosted search engine. This crawler is one half of the project, the other half is the actual PHP webapp which I haven't yet made and uploaded to github. For now, this is an incomplete project. The crawler is very basic and is likely far from pefect at this point in time.
 
+## Usage
+This is incomplete software so I wouldn't recommend using it currently.
+
 ## TLD List
 I got the `tlds-alpha-by-domain.txt` file from here: https://data.iana.org/TLD/tlds-alpha-by-domain.txt
 
