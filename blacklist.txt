@@ -1,6 +1,15 @@
 # URLs of websites that the spider must never visit.
+# We probably don't want to visit search engines.
 https://www.google.com/
 https://www.bing.com/
 https://duckduckgo.com/
 https://yandex.com/
 https://search.yahoo.com/
+https://www.baidu.com/
+https://search.aol.com/
+https://www.ask.com/
+https://search.brave.com/
+https://www.dogpile.com/
+https://www.ecosia.org/
+https://www.startpage.com/
+https://swisscows.com/
