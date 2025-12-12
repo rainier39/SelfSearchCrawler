@@ -12,8 +12,12 @@ import mariadb # pip3 install mariadb
 from bs4 import BeautifulSoup # pip3 install beautifulsoup4
 
 # Constants.
-VERSION = "1.0"
+VERSION = "1.1"
 TOCRAWLCOMMENT = "# URLs of websites to be visited by the spider."
+# Blacklisted file types that will never be saved to the database.
+# jpg, png, gif x2, riff, pdf, elf, rar x2, zip (and similar) x3, jpeg 2000 x2, class, ogg, flac, microsoft office, tar x2, 7z, gz, xz, matroska, mpeg4 x2
+# Thanks to https://en.wikipedia.org/wiki/List_of_file_signatures
+MAGICNUMS = [b"\xff\xd8\xff", b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", b"\x47\x49\x46\x38\x37\x61", b"\x47\x49\x46\x38\x39\x61", b"\x52\x49\x46\x46", b"\x25\x50\x44\x46\x2d", b"\x7F\x45\x4C\x46", b"\x52\x61\x72\x21\x1a\x07\x00", b"\x52\x61\x72\x21\x1a\x07\x01\x00", b"\x50\x4b\x03\x04", b"\x50\x4b\x05\x06", b"\x50\x4b\x07\x08", b"\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a", b"\xff\x4f\xff\x51", b"\xca\xfe\xba\xbe", b"\x4f\x67\x67\x53", b"\x66\x4c\x61\x43", b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", b"\x75\x73\x74\x61\x72\x00\x30\x30", b"\x75\x73\x74\x61\x72\x20\x20\x00", b"\x37\x7a\xbc\xaf\x27\x1c", b"\x1f\x8b", b"\xfd\x37\x7a\x58\x5a\x00", b"\x1a\x45\xdf\xa3", b"\x66\x74\x79\x70\x69\x73\x6f\x6d", b"\x66\x74\x79\x70\x4d\x53\x4e\x56"]
 
 def regenUserAgent():
   cfg["useragent"] = cfg["botname"] + "/" + cfg["botversion"] + " (+" + cfg["boturl"] + ")"
@@ -41,18 +45,22 @@ def parseRobotsFile(r, u):
 
   us = False
   for line in robo:
-    line = line.strip().lower()
+    line = line.strip()
     if line.startswith("user-agent:"):
-      if cfg["botname"].lower() in line:
+      # This is case-insensitive.
+      if cfg["botname"].lower() in line.lower():
         us = True
       elif (line == "user-agent: *"):
         us = True
       else:
         us = False
     elif us:
-      if (line == "disallow: /"):
+      if ((line == "disallow: /") or (line == "disallow: /*")):
         return False
-      if ((tempdirs != None) and (line.startswith("disallow: /" + tempdirs[0]))):
+      # Look for explicit allows.
+      elif ((line == "allow: /" + ''.join(tempdirs, "/")) or (line == "allow: /" + ''.join(tempdirs, "/") + "/")):
+        return True
+      elif ((tempdirs != None) and (line.startswith("disallow: /" + tempdirs[0]))):
         # File level restrictions.
         if (line == "disallow: /" + tempdirs[0]):
           return False
@@ -81,6 +89,7 @@ cfg = {"botname": "SelfSearchbot",
 "botversion": VERSION,
 "regenuseragent": "no",
 "flushinterval": 10,
+"debug": "no",
 "mhost": None,
 "muser": None,
 "mpassword": None,
@@ -175,6 +184,7 @@ else:
 counter = 0
 
 # Main loop.
+print("Starting crawl...")
 while (len(tocrawl) > 0):
   url = tocrawl[0]
   
@@ -200,7 +210,8 @@ while (len(tocrawl) > 0):
     if temp.endswith(t):
       matches.append(t)
   if (len(matches) == 0):
-    print("Error: invalid TLD. (" + url + ")")
+    if (cfg["debug"] == "yes"):
+      print("Error: invalid TLD. (" + url + ")")
     tocrawl.pop(0)
     continue
   # The longest matching TLD will be the correct one.
@@ -212,7 +223,8 @@ while (len(tocrawl) > 0):
   
   # Don't crawl blacklisted pages.
   if full in blacklist:
-    print("Skipping blacklisted page.")
+    if (cfg["debug"] == "yes"):
+      print("Skipping blacklisted page.")
     tocrawl.pop(0)
     continue
   
@@ -221,7 +233,8 @@ while (len(tocrawl) > 0):
   db.execute(selectquery, (url,))
   if (db.rowcount > 0):
     tocrawl.pop(0)
-    print("Skipping duplicate page.")
+    if (cfg["debug"] == "yes"):
+      print("Skipping duplicate page.")
     continue
   
   firstvisit = True
@@ -240,12 +253,13 @@ while (len(tocrawl) > 0):
     robot = robots.text
   
     if (len(robot) > 0):
-      insertquery = "INSERT INTO robots (url, content) VALUES (?, ?)"
+      insertquery = "REPLACE INTO robots (url, content) VALUES (?, ?)"
       try:
-        db.execute(insertquery, (full, robot))
+        db.execute(insertquery, (full[:2048], robot[:16777215]))
         conn.commit()
       except mariadb.Error as e:
-        print("Database Error: " + str(e))
+        if (cfg["debug"] == "yes"):
+          print("Database Error: " + str(e))
         conn.rollback()
   # Otherwise, check the existing robots.txt file and see if we're allowed to crawl this URL.
   else:
@@ -258,15 +272,24 @@ while (len(tocrawl) > 0):
   parsed = parseRobotsFile(robot, url)
   if parsed:
     page = s.get(url, headers=headers)
+    stop = False
     
-    if (len(page.text) > 0):
+    # If it's a known bad filetype, don't waste space in the database.
+    for mn in MAGICNUMS:
+      if page.content.startswith(mn):
+        if (cfg["debug"] == "yes"):
+          print("Skipping known bad filetype.")
+        stop = True
+    
+    if ((not stop) and (len(page.text) > 0)):
       # Add the page to the database.
       insertquery = "REPLACE INTO pages (url, content) VALUES (?, ?)"
       try:
-        db.execute(insertquery, (url, page.text))
+        db.execute(insertquery, (url[:2048], page.text[:16777215]))
         conn.commit()
       except mariadb.Error as e:
-        print("Database Error: " + str(e))
+        if (cfg["debug"] == "yes"):
+          print("Database Error: " + str(e))
         conn.rollback()
       # Get all of the links from the page.
       soup = BeautifulSoup(page.text, "lxml")
@@ -274,7 +297,6 @@ while (len(tocrawl) > 0):
       for link in links:
         if not link.get("href"):
           continue
-        print(link["href"])
         # Absolute links.
         if (link["href"].startswith("http://") or link["href"].startswith("https://")):
           if link["href"] not in tocrawl:
@@ -290,8 +312,10 @@ while (len(tocrawl) > 0):
   counter += 1
   
   # Periodically flush the crawl list.
-  if (counter >= cfg["flushinterval"]):
+  if (counter >= int(cfg["flushinterval"])):
     flush()
     counter = 0
 
+print("Ending crawl...")
 cleanup()
+print("Done!")
