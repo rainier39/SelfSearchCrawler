@@ -58,7 +58,7 @@ def parseRobotsFile(r, u):
       if ((line == "disallow: /") or (line == "disallow: /*")):
         return False
       # Look for explicit allows.
-      elif ((line == "allow: /" + ''.join(tempdirs, "/")) or (line == "allow: /" + ''.join(tempdirs, "/") + "/")):
+      elif ((line == "allow: /" + "/".join(tempdirs)) or (line == "allow: /" + "/".join(tempdirs) + "/")):
         return True
       elif ((tempdirs != None) and (line.startswith("disallow: /" + tempdirs[0]))):
         # File level restrictions.
