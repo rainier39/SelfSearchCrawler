@@ -12,7 +12,7 @@ import mariadb # pip3 install mariadb
 from bs4 import BeautifulSoup # pip3 install beautifulsoup4
 
 # Constants.
-VERSION = "1.1"
+VERSION = "1.2"
 TOCRAWLCOMMENT = "# URLs of websites to be visited by the spider."
 # Blacklisted file types that will never be saved to the database.
 # jpg, png, gif x2, riff, pdf, elf, rar x2, zip (and similar) x3, jpeg 2000 x2, class, ogg, flac, microsoft office, tar x2, 7z, gz, xz, matroska, mpeg4 x2
@@ -99,14 +99,17 @@ cfg = {"botname": "SelfSearchbot",
 regenUserAgent()
 
 # Load the configuration file.
-with open("config.cfg", "rt") as f:
-  for line in f:
-    # Ignoring comments.
-    if not line.startswith("#"):
-      for c in cfg:
-        if line.startswith(c + "="):
-          # Overwrite the default config with any new values.
-          cfg[line[:line.find("=")]] = line.strip()[line.find("=")+1:]
+if not os.path.isfile("config.cfg"):
+  print("Warning: config file not found.")
+else:
+  with open("config.cfg", "rt") as f:
+    for line in f:
+      # Ignoring comments.
+      if not line.startswith("#"):
+        for c in cfg:
+          if line.startswith(c + "="):
+            # Overwrite the default config with any new values.
+            cfg[line[:line.find("=")]] = line.strip()[line.find("=")+1:]
 
 if (cfg["regenuseragent"] == "yes"):
   regenUserAgent()
@@ -151,6 +154,9 @@ headers = {"User-Agent": cfg["useragent"]}
 tlds = []
 
 # Get the list of TLDs.
+if not os.path.isfile("tlds-alpha-by-domain.txt"):
+  print("Error: TLD list file not found.")
+  exit()
 with open("tlds-alpha-by-domain.txt", "rt") as f:
   for line in f:
     # Ignoring comments.
@@ -159,6 +165,8 @@ with open("tlds-alpha-by-domain.txt", "rt") as f:
 
 tocrawl = []
 
+# TODO: remove this as it will be done in the database instead.
+# (will be replaced with a "seed.txt" file)
 # Get the list of URLs we need to crawl.
 with open("tocrawl.txt", "rt") as f:
   for line in f:
