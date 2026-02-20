@@ -12,12 +12,8 @@ import mariadb # pip3 install mariadb
 from bs4 import BeautifulSoup # pip3 install beautifulsoup4
 
 # Constants.
-VERSION = "1.2"
+VERSION = "1.5"
 TOCRAWLCOMMENT = "# URLs of websites to be visited by the spider."
-# Blacklisted file types that will never be saved to the database.
-# jpg, png, gif x2, riff, pdf, elf, rar x2, zip (and similar) x3, jpeg 2000 x2, class, ogg, flac, microsoft office, tar x2, 7z, gz, xz, matroska, mpeg4 x2
-# Thanks to https://en.wikipedia.org/wiki/List_of_file_signatures
-MAGICNUMS = [b"\xff\xd8\xff", b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", b"\x47\x49\x46\x38\x37\x61", b"\x47\x49\x46\x38\x39\x61", b"\x52\x49\x46\x46", b"\x25\x50\x44\x46\x2d", b"\x7F\x45\x4C\x46", b"\x52\x61\x72\x21\x1a\x07\x00", b"\x52\x61\x72\x21\x1a\x07\x01\x00", b"\x50\x4b\x03\x04", b"\x50\x4b\x05\x06", b"\x50\x4b\x07\x08", b"\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a", b"\xff\x4f\xff\x51", b"\xca\xfe\xba\xbe", b"\x4f\x67\x67\x53", b"\x66\x4c\x61\x43", b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", b"\x75\x73\x74\x61\x72\x00\x30\x30", b"\x75\x73\x74\x61\x72\x20\x20\x00", b"\x37\x7a\xbc\xaf\x27\x1c", b"\x1f\x8b", b"\xfd\x37\x7a\x58\x5a\x00", b"\x1a\x45\xdf\xa3", b"\x66\x74\x79\x70\x69\x73\x6f\x6d", b"\x66\x74\x79\x70\x4d\x53\x4e\x56"]
 
 def regenUserAgent():
   cfg["useragent"] = cfg["botname"] + "/" + cfg["botversion"] + " (+" + cfg["boturl"] + ")"
@@ -34,6 +30,25 @@ def cleanup():
   # Close the database connection.
   db.close()
   conn.close()
+
+# Check whether a string is a valid IP address.
+def isIP(ip):
+  valid = True
+  # IPv4
+  if (ip.count(".") == 3):
+    temp = ip.split(".")
+    if (len(temp) == 4):
+      for t in temp:
+        if not t.isdigit():
+          valid = False
+        else:
+          i = int(t)
+          if (i < 0) or (i > 255):
+            valid = False
+  # IPv6 TODO
+  
+  return valid
+      
 
 # Auxiliary function for parsing robots.txt rules.
 def parseRobotsRules(rules, target):
@@ -342,16 +357,25 @@ while (len(tocrawl) > 0):
     if temp.endswith(t):
       matches.append(t)
   if (len(matches) == 0):
-    if (cfg["debug"] == "yes"):
-      print("Error: invalid TLD. (" + url + ")")
-    tocrawl.pop(0)
-    continue
+    # Check if this is a raw IP address rather than a domain name.
+    if isIP(temp):
+      matches.append("")
+      if (cfg["debug"] == "yes"):
+        print("Raw IP address detected: " + temp + ".")
+    else:
+      if (cfg["debug"] == "yes"):
+        print("Error: invalid TLD. (" + url + ")")
+      tocrawl.pop(0)
+      continue
   # The longest matching TLD will be the correct one.
   tld = max(matches, key=len)
   temp = temp[:temp.rfind(tld)-1]
   domain = temp[temp.rfind(".")+1:]
   subdomain = temp.replace(domain, "").strip(".")
-  full = temp + "." + tld
+  if (tld != ""):
+    full = temp + "." + tld
+  else:
+    full = temp
   
   # Don't crawl blacklisted pages.
   if full in blacklist:
@@ -380,9 +404,14 @@ while (len(tocrawl) > 0):
   s = requests.Session()
   # On the first visit we need to get the robots.txt file so we know what we can and cannot crawl.
   if firstvisit:
-    robots = s.get(protocol + full + "/robots.txt", headers=headers)
-    
-    robot = robots.text
+    try:
+      robots = s.get(protocol + full + "/robots.txt", headers=headers)
+      robot = robots.text
+    except:
+      # Allow by default.
+      robot = "User-agent: *\nAllow: /"
+      if (cfg["debug"] == "yes"):
+        print("Failed to get robots.txt for site " + full + ".")
   
     if (len(robot) > 0):
       insertquery = "REPLACE INTO robots (url, content) VALUES (?, ?)"
@@ -406,12 +435,13 @@ while (len(tocrawl) > 0):
     page = s.get(url, headers=headers)
     stop = False
     
-    # If it's a known bad filetype, don't waste space in the database.
-    for mn in MAGICNUMS:
-      if page.content.startswith(mn):
-        if (cfg["debug"] == "yes"):
-          print("Skipping known bad filetype.")
-        stop = True
+    # Stop if the content we received isn't UTF-8 (not a text file).
+    try:
+      page.content.decode("utf-8")
+    except:
+      stop = True
+      if (cfg["debug"] == "yes"):
+        print("Found non utf-8 content on page: " + url)
     
     if ((not stop) and (len(page.text) > 0)):
       # Add the page to the database.
