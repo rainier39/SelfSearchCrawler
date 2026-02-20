@@ -35,50 +35,174 @@ def cleanup():
   db.close()
   conn.close()
 
+# Auxiliary function for parsing robots.txt rules.
+def parseRobotsRules(rules, target):
+  longest = -1
+  # Default behavior: assume we are allowed.
+  allowed = True
+  
+  # Remove trailing slashes.
+  target = target.rstrip("/")
+  target = target.split("/")
+  
+  for rule in rules:
+    if rule.lower().startswith("allow:"):
+      rule = rule[6:].strip()
+      # Remove trailing dollar signs (end of match pattern character)
+      rule = rule.rstrip("$")
+      # Remove trailing wildcards.
+      while rule.endswith("/*"):
+        rule = rule[:-2]
+      # Special case: allow nothing (ignored).
+      if (rule == ""):
+        continue
+      # Special case: allow /.
+      if (rule == "/"):
+        if longest <= 1:
+          longest = 1
+          allowed = True
+        continue
+      # Remove trailing slashes.
+      rule = rule.rstrip("/")
+      rule = rule.split("/")
+      
+      if (len(target) < len(rule)):
+        break
+      else:
+        end = len(rule)
+      
+      match = True
+      
+      for r in range(0, end):
+        wildcardmatch = False
+        
+        if "*" in rule[r]:
+          if (rule[r] == "*"):
+            wildcardmatch = True
+          elif (rule[r].startswith("*")):
+            if (target[r].endswith(rule[r][1:])):
+              wildcardmatch = True
+          elif (rule[r].endswith("*")):
+            if (target[r].startswith(rule[r][:rule[r][-1]])):
+              wildcardmatch = True
+        
+        if (rule[r] != target[r]) and not wildcardmatch:
+          match = False
+          break
+      
+      # If this is a match.
+      if match and (end >= longest):
+        allowed = True
+        longest = end
+    elif rule.lower().startswith("disallow:"):
+      rule = rule[9:].strip()
+      # Remove trailing dollar signs (end of match pattern character)
+      rule = rule.rstrip("$")
+      # Remove trailing wildcards.
+      while rule.endswith("/*"):
+        rule = rule[:-2]
+      # Special case: disallow nothing.
+      if (rule == ""):
+        if longest < 0:
+          longest = 0
+          allowed = True
+        continue
+      # Special case: disallow /.
+      if (rule == "/"):
+        if longest < 1:
+          longest = 1
+          allowed = False
+        continue
+      # Remove trailing slashes.
+      rule = rule.rstrip("/")
+      rule = rule.split("/")
+      
+      if (len(target) < len(rule)):
+        break
+      else:
+        end = len(rule)
+      
+      match = True
+      
+      for r in range(0, end):
+        wildcardmatch = False
+        
+        if "*" in rule[r]:
+          if (rule[r] == "*"):
+            wildcardmatch = True
+          elif (rule[r].startswith("*")):
+            if (target[r].endswith(rule[r][1:])):
+              wildcardmatch = True
+          elif (rule[r].endswith("*")):
+            if (target[r].startswith(rule[r][:rule[r][-1]])):
+              wildcardmatch = True
+        
+        if (rule[r] != target[r]) and not wildcardmatch:
+          match = False
+          break
+      
+      # If this is a match.
+      if match and (end > longest):
+        allowed = False
+        longest = end
+    #elif rule.lower().startswith("crawl-delay:"):
+    # Ignore everything else.
+
+  return allowed
+
 def parseRobotsFile(r, u):
-  tempurl = u.replace("https://", "").replace("http://", "")
+  # Remove the protocol part of the URL.
+  if u.startswith("https://"):
+    tempurl = u[8:]
+  elif u.startswith("http://"):
+    tempurl = u[7:]
   tempdirs = None
+  # Get the URL's path.
   if "/" in tempurl:
-    tempdirs = tempurl[tempurl.find("/")+1:].strip("/").split("/")
+    tempurl = tempurl[tempurl.find("/"):]
+  else:
+    tempurl = "/"
 
   robo = r.split("\n")
+  
+  usrules = []
+  starrules = []
 
   us = False
+  star = False
   for line in robo:
+    # Skip full line comments.
+    if line.startswith("#"):
+      continue
+    if " #" in line:
+      line = line[:line.find(" #")]
     line = line.strip()
-    if line.startswith("user-agent:"):
+    # Skip blank lines.
+    if line == "":
+      continue
+    if line.lower().startswith("user-agent:"):
       # This is case-insensitive.
-      if cfg["botname"].lower() in line.lower():
+      if (cfg["botname"].lower() == line.lower()[11:].strip()):
         us = True
-      elif (line == "user-agent: *"):
-        us = True
+        star = False
+      elif (line.lower()[11:].strip() == "*"):
+        star = True
+        us = False
       else:
         us = False
+        star = False
     elif us:
-      if ((line == "disallow: /") or (line == "disallow: /*")):
-        return False
-      # Look for explicit allows.
-      elif ((line == "allow: /" + "/".join(tempdirs)) or (line == "allow: /" + "/".join(tempdirs) + "/")):
-        return True
-      elif ((tempdirs != None) and (line.startswith("disallow: /" + tempdirs[0]))):
-        # File level restrictions.
-        if (line == "disallow: /" + tempdirs[0]):
-          return False
-        # Restricted dir.
-        elif (line == "disallow: /" + tempdirs[0] + "/"):
-          return False
-        else:
-          # Otherwise a subdir/file may be restricted.
-          temprule = "disallow: /" + tempdirs[0] + "/"
-          for i in range(1, len(tempdirs)):
-            # File level restrictions.
-            if (line == (temprule + tempdirs[i])):
-              return False
-            # Restricted dir.
-            elif (line == (temprule + tempdirs[i] + "/")):
-              return False
-            else:
-              temprule += tempdirs[i] + "/"
+      usrules.append(line)
+    elif star:
+      starrules.append(line)
+    # We ignore everything else.
+  
+  # If there are rules set for this specific crawler, abide by them.
+  if (len(usrules) > 0):
+    return parseRobotsRules(usrules, tempurl)
+  # Otherwise abide by the generic rules.
+  else:
+    return parseRobotsRules(starrules, tempurl)
   
   # Default behavior: assume we are allowed.
   return True
