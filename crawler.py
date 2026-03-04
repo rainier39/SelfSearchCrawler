@@ -12,21 +12,14 @@ import mariadb # pip3 install mariadb
 from bs4 import BeautifulSoup # pip3 install beautifulsoup4
 
 # Constants.
-VERSION = "1.5"
-TOCRAWLCOMMENT = "# URLs of websites to be visited by the spider."
+VERSION = "1.6"
+# Links starting with any of these are skipped. Source: https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+SCHEMEBLACKLIST = ['aaa:', 'aaas:', 'about:', 'acap:', 'acct:', 'acd:', 'acr:', 'adiumxtra:', 'adt:', 'afp:', 'afs:', 'aim:', 'amss:', 'android:', 'appdata:', 'apt:', 'ar:', 'ari:', 'ark:', 'at:', 'attachment:', 'aw:', 'barion:', 'bb:', 'beshare:', 'bitcoin:', 'bitcoincash:', 'bl:', 'blob:', 'bluetooth:', 'bolo:', 'brid:', 'browserext:', 'cabal:', 'calculator:', 'callto:', 'cap:', 'caip:', 'cast:', 'casts:', 'chrome:', 'chrome-extension:', 'cid:', 'coap:', 'coap+tcp:', 'coap+ws:', 'coaps:', 'coaps+tcp:', 'coaps+ws:', 'com-eventbrite-attendee:', 'content:', 'content-type:', 'crid:', 'cstr:', 'cvs:', 'dab:', 'dat:', 'data:', 'dav:', 'dhttp:', 'diaspora:', 'dict:', 'did:', 'dis:', 'dlna-playcontainer:', 'dlna-playsingle:', 'dnp:', 'dns:', 'dntp:', 'doi:', 'donau:', 'dpp:', 'drm:', 'drop:', 'dtmi:', 'dtn:', 'dvb:', 'dvx:', 'dweb:', 'ed2k:', 'eid:', 'elsi:', 'embedded:', 'ens:', 'esim:', 'ethereum:', 'example:', 'facetime:', 'fax:', 'feed:', 'feedready:', 'fido:', 'file:', 'filesystem:', 'finger:', 'first-run-pen-experience:', 'fish:', 'fm:', 'ftp:', 'fuchsia-pkg:', 'geo:', 'gg:', 'git:', 'gitoid:', 'gizmoproject:', 'go:', 'gopher:', 'graph:', 'grd:', 'gtalk:', 'h323:', 'ham:', 'hcap:', 'hcp:', 'hs20:', 'hxxp:', 'hxxps:', 'hydrazone:', 'hyper:', 'i0:', 'iax:', 'ibi:', 'ibi-:', 'ilstring:', 'icap:', 'icon:', 'ilstring:', 'im:', 'imap:', 'info:', 'iotdisco:', 'ipfs:', 'ipn:', 'ipns:', 'ipp:', 'ipps:', 'irc:', 'irc6:', 'ircs:', 'iris:', 'iris.beep:', 'iris.lwz:', 'iris.xpc:', 'iris.xpcs:', 'isostore:', 'itms:', 'jabber:', 'jar:', 'jms:', 'keyparc:', 'lastfm:', 'lbry:', 'ldap:', 'ldaps:', 'leaptofrogans:', 'lid:', 'linkid:', 'lorawan:', 'lpa:', 'lvlt:', 'machineProvisioningProgressReporter:', 'magnet:', 'mailserver:', 'mailto:', 'maps:', 'market:', 'matrix:', 'message:', 'microsoft.windows.camera:', 'microsoft.windows.camera.multipicker:', 'microsoft.windows.camera.picker:', 'mid:', 'mms:', 'modem:', 'mongodb:', 'moz:', 'mqtt:', 'mqtts:', 'ms-access:', 'ms-appinstaller:', 'ms-browser-extension:', 'ms-calculator:', 'ms-drive-to:', 'ms-enrollment:', 'ms-excel:', 'ms-eyecontrolspeech:', 'ms-gamebarservices:', 'ms-gamingoverlay:', 'ms-getoffice:', 'ms-help:', 'ms-infopath:', 'ms-inputapp:', 'ms-launchremotedesktop:', 'ms-lockscreencomponent-config:', 'ms-media-stream-id:', 'ms-meetnow:', 'ms-mixedrealitycapture:', 'ms-mobileplans:', 'ms-newsandinterests:', 'ms-officeapp:', 'ms-people:', 'ms-personacard:', 'ms-powerpoint:', 'ms-project:', 'ms-publisher:', 'ms-recall:', 'ms-remotedesktop:', 'ms-remotedesktop-launch:', 'ms-restoretabcompanion:', 'ms-screenclip:', 'ms-screensketch:', 'ms-search:', 'ms-search-repair:', 'ms-secondary-screen-controller:', 'ms-secondary-screen-setup:', 'ms-settings:', 'ms-settings-airplanemode:', 'ms-settings-bluetooth:', 'ms-settings-camera:', 'ms-settings-cellular:', 'ms-settings-cloudstorage:', 'ms-settings-connectabledevices:', 'ms-settings-displays-topology:', 'ms-settings-emailandaccounts:', 'ms-settings-language:', 'ms-settings-location:', 'ms-settings-lock:', 'ms-settings-nfctransactions:', 'ms-settings-notifications:', 'ms-settings-power:', 'ms-settings-privacy:', 'ms-settings-proximity:', 'ms-settings-screenrotation:', 'ms-settings-wifi:', 'ms-settings-workplace:', 'ms-spd:', 'ms-stickers:', 'ms-sttoverlay:', 'ms-transit-to:', 'ms-useractivityset:', 'ms-uup:', 'ms-virtualtouchpad:', 'ms-visio:', 'ms-walk-to:', 'ms-whiteboard:', 'ms-whiteboard-cmd:', 'ms-widgetboard:', 'ms-widgets:', 'ms-word:', 'msnim:', 'msrp:', 'msrps:', 'mss:', 'mt:', 'mtqp:', 'mtrust:', 'mumble:', 'mupdate:', 'mvn:', 'mvrp:', 'mvrps:', 'news:', 'nfs:', 'ni:', 'nih:', 'nntp:', 'notes:', 'num:', 'ocf:', 'oid:', 'onenote:', 'onenote-cmd:', 'opaquelocktoken:', 'openid:', 'openpgp4fpr:', 'otpauth:', 'p1:', 'pack:', 'palm:', 'paparazzi:', 'payment:', 'payto:', 'pkcs11:', 'platform:', 'pop:', 'pres:', 'prospero:', 'proxy:', 'psyc:', 'pttp:', 'pwid:', 'qb:', 'query:', 'quic-transport:', 'redis:', 'rediss:', 'reload:', 'res:', 'resource:', 'rmi:', 'rsync:', 'rtmfp:', 'rtmp:', 'rtsp:', 'rtsps:', 'rtspu:', 'sarif:', 'secondlife:', 'secret-token:', 'service:', 'session:', 'sftp:', 'sgn:', 'shc:', 'shelter:', 'shttp (OBSOLETE):', 'sieve:', 'simpleledger:', 'simplex:', 'sip:', 'sips:', 'skype:', 'smb:', 'smp:', 'sms:', 'smtp:', 'snews:', 'snmp:', 'soap.beep:', 'soap.beeps:', 'soldat:', 'spacify:', 'spiffe:', 'spotify:', 'ssb:', 'ssh:', 'starknet:', 'steam:', 'stun:', 'stuns:', 'submit:', 'svn:', 'swh:', 'swid:', 'swidpath:', 'tag:', 'taler:', 'teamspeak:', 'teapot:', 'teapots:', 'tel:', 'teliaeid:', 'telnet:', 'tftp:', 'things:', 'thismessage:', 'thzp:', 'tip:', 'tn3270:', 'tool:', 'turn:', 'turns:', 'tv:', 'udp:', 'unreal:', 'upn:', 'upt:', 'urn:', 'ut2004:', 'uuid-in-package:', 'v-event:', 'vemmi:', 'ventrilo:', 'ves:', 'videotex:', 'view-source:', 'vnc:', 'vscode:', 'vscode-insiders:', 'vsls:', 'w3:', 'wais:', 'wasm:', 'wasm-js:', 'wcr:', 'web+ap:', 'web3:', 'webcal:', 'wifi:', 'wpid:', 'ws:', 'wss:', 'wtai:', 'wyciwyg:', 'xcompute:', 'xcon:', 'xcon-userid:', 'xfire:', 'xftp:', 'xmlrpc.beep:', 'xmlrpc.beeps:', 'xmpp:', 'xrcp:', 'xri:', 'ymsgr:', 'z39.50:', 'z39.50r:', 'z39.50s:', '#']
 
 def regenUserAgent():
   cfg["useragent"] = cfg["botname"] + "/" + cfg["botversion"] + " (+" + cfg["boturl"] + ")"
-
-def flush():
-  # Flush the tocrawl file.
-  with open("tocrawl.txt", "wt") as f:
-    f.write(TOCRAWLCOMMENT + "\n")
-    for t in tocrawl:
-      f.write(t + "\n")
       
 def cleanup():
-  flush()
   # Close the database connection.
   db.close()
   conn.close()
@@ -267,7 +260,7 @@ db = conn.cursor()
 print("Creating DB table if it doesn't exist already...")
 try:
   db.execute("""CREATE TABLE IF NOT EXISTS `pages` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `url` varchar(2048) NOT NULL,
   `timescraped` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `content` mediumtext NOT NULL,
@@ -275,10 +268,17 @@ try:
   UNIQUE KEY `url` (`url`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;""")
   db.execute("""CREATE TABLE IF NOT EXISTS `robots` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `url` varchar(2048) NOT NULL,
   `timescraped` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `content` mediumtext NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `url` (`url`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;""")
+  db.execute("""CREATE TABLE IF NOT EXISTS `tocrawl` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `url` varchar(2048) NOT NULL,
+  `timeadded` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;""")
@@ -294,6 +294,7 @@ tlds = []
 
 # Get the list of TLDs.
 if not os.path.isfile("tlds-alpha-by-domain.txt"):
+  # TODO: attempt to download the TLD list.
   print("Error: TLD list file not found.")
   exit()
 with open("tlds-alpha-by-domain.txt", "rt") as f:
@@ -304,14 +305,25 @@ with open("tlds-alpha-by-domain.txt", "rt") as f:
 
 tocrawl = []
 
-# TODO: remove this as it will be done in the database instead.
-# (will be replaced with a "seed.txt" file)
 # Get the list of URLs we need to crawl.
-with open("tocrawl.txt", "rt") as f:
-  for line in f:
-    # Ignoring comments.
-    if not line.startswith("#"):
-      tocrawl.append(line.strip())
+if not os.path.isfile("seed.txt"):
+  print("Warning: seed file not found.")
+else:
+  with open("seed.txt", "rt") as f:
+    for line in f:
+      # Ignoring comments.
+      if not line.startswith("#"):
+        tocrawl.append(line.strip())
+
+if (len(tocrawl) < 1):
+  print("Failed to get any sites to crawl from seed file, trying database...")
+  selectquery = "SELECT url FROM tocrawl ORDER BY timeadded LIMIT 1"
+  db.execute(selectquery)
+  if (db.rowcount > 0):
+    tocrawl.append(db.fetchone()[0])
+  else:
+    print("Failed to get any sites to crawl from the database.")
+    exit()
 
 blacklist = []
 
@@ -330,10 +342,27 @@ else:
 
 counter = 0
 
+# We need this because there are a few things to do when discarding a URL.
+def customContinue():
+  global tocrawl
+  # Remove this URL from the list.
+  tocrawl.pop(0)
+  # Remove it from the database too.
+  deletequery = "DELETE FROM tocrawl WHERE url='?'"
+  db.execute(deletequery, (originalurl))
+  
+  # Get a new URL from the database if needed.
+  if (len(tocrawl) < 1):
+    selectquery = "SELECT url FROM tocrawl ORDER BY timeadded LIMIT 1"
+    db.execute(selectquery)
+    if (db.rowcount > 0):
+      tocrawl.append(db.fetchone()[0])
+
 # Main loop.
 print("Starting crawl...")
 while (len(tocrawl) > 0):
-  url = tocrawl[0]
+  originalurl = tocrawl[0]
+  url = originalurl
   
   protocol = "https://"
   
@@ -365,8 +394,7 @@ while (len(tocrawl) > 0):
     else:
       if (cfg["debug"] == "yes"):
         print("Error: invalid TLD. (" + url + ")")
-      tocrawl.pop(0)
-      continue
+      customContinue()
   # The longest matching TLD will be the correct one.
   tld = max(matches, key=len)
   temp = temp[:temp.rfind(tld)-1]
@@ -381,17 +409,15 @@ while (len(tocrawl) > 0):
   if full in blacklist:
     if (cfg["debug"] == "yes"):
       print("Skipping blacklisted page.")
-    tocrawl.pop(0)
-    continue
+    customContinue()
   
   # Don't crawl pages we've already crawled.
   selectquery = "SELECT url FROM pages WHERE url=?"
   db.execute(selectquery, (url,))
   if (db.rowcount > 0):
-    tocrawl.pop(0)
     if (cfg["debug"] == "yes"):
       print("Skipping duplicate page.")
-    continue
+    customContinue()
   
   firstvisit = True
   
@@ -459,24 +485,49 @@ while (len(tocrawl) > 0):
       for link in links:
         if not link.get("href"):
           continue
+        blacklisted = False
+        for scheme in SCHEMEBLACKLIST:
+          if link["href"].startswith(scheme):
+            blacklisted = True
         # Absolute links.
         if (link["href"].startswith("http://") or link["href"].startswith("https://")):
           if link["href"] not in tocrawl:
-            tocrawl.append(link["href"])
+            # Enforce URL length limit.
+            if (len(link["href"]) <= 2048):
+              tocrawl.append(link["href"])
+              insertquery = "INSERT INTO tocrawl (url) VALUES (?)"
+              linky = link["href"]
+              try:
+                db.execute(insertquery, (linky,))
+                conn.commit()
+              # Just skip what are probably duplicate URLs.
+              except mariadb.IntegrityError:
+                conn.rollback()
+            else:
+              print("Discarding URL for being too long.")
+        elif (blacklisted):
+          print("Skipping blacklisted link type. Link: " + link["href"])
         # Relative links.
-        elif (link["href"].startswith("/")):
-          linky = protocol + full + link["href"]
+        else:
+          if (link["href"].startswith("/")):
+            linky = protocol + full + link["href"]
+          else:
+            linky = protocol + full + "/" + link["href"]
           if linky not in tocrawl:
-            tocrawl.append(linky)
+            # Enforce URL length limit.
+            if (len(linky) <= 2048):
+              tocrawl.append(linky)
+              insertquery = "INSERT INTO tocrawl (url) VALUES (?)"
+              try:
+                db.execute(insertquery, (linky,))
+                conn.commit()
+              # Just skip what are probably duplicate URLs.
+              except mariadb.IntegrityError:
+                conn.rollback()
+            else:
+              print("Discarding URL for being too long.")
   
-  # Remove this URL from the list.
-  tocrawl.pop(0)
-  counter += 1
-  
-  # Periodically flush the crawl list.
-  if (counter >= int(cfg["flushinterval"])):
-    flush()
-    counter = 0
+  customContinue()
 
 print("Ending crawl...")
 cleanup()
