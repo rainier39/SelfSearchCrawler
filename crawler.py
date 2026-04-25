@@ -12,7 +12,7 @@ import mariadb # pip3 install mariadb
 from bs4 import BeautifulSoup # pip3 install beautifulsoup4
 
 # Constants.
-VERSION = "1.6"
+VERSION = "2.0"
 # Links starting with any of these are skipped. Source: https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
 SCHEMEBLACKLIST = ['aaa:', 'aaas:', 'about:', 'acap:', 'acct:', 'acd:', 'acr:', 'adiumxtra:', 'adt:', 'afp:', 'afs:', 'aim:', 'amss:', 'android:', 'appdata:', 'apt:', 'ar:', 'ari:', 'ark:', 'at:', 'attachment:', 'aw:', 'barion:', 'bb:', 'beshare:', 'bitcoin:', 'bitcoincash:', 'bl:', 'blob:', 'bluetooth:', 'bolo:', 'brid:', 'browserext:', 'cabal:', 'calculator:', 'callto:', 'cap:', 'caip:', 'cast:', 'casts:', 'chrome:', 'chrome-extension:', 'cid:', 'coap:', 'coap+tcp:', 'coap+ws:', 'coaps:', 'coaps+tcp:', 'coaps+ws:', 'com-eventbrite-attendee:', 'content:', 'content-type:', 'crid:', 'cstr:', 'cvs:', 'dab:', 'dat:', 'data:', 'dav:', 'dhttp:', 'diaspora:', 'dict:', 'did:', 'dis:', 'dlna-playcontainer:', 'dlna-playsingle:', 'dnp:', 'dns:', 'dntp:', 'doi:', 'donau:', 'dpp:', 'drm:', 'drop:', 'dtmi:', 'dtn:', 'dvb:', 'dvx:', 'dweb:', 'ed2k:', 'eid:', 'elsi:', 'embedded:', 'ens:', 'esim:', 'ethereum:', 'example:', 'facetime:', 'fax:', 'feed:', 'feedready:', 'fido:', 'file:', 'filesystem:', 'finger:', 'first-run-pen-experience:', 'fish:', 'fm:', 'ftp:', 'fuchsia-pkg:', 'geo:', 'gg:', 'git:', 'gitoid:', 'gizmoproject:', 'go:', 'gopher:', 'graph:', 'grd:', 'gtalk:', 'h323:', 'ham:', 'hcap:', 'hcp:', 'hs20:', 'hxxp:', 'hxxps:', 'hydrazone:', 'hyper:', 'i0:', 'iax:', 'ibi:', 'ibi-:', 'ilstring:', 'icap:', 'icon:', 'ilstring:', 'im:', 'imap:', 'info:', 'iotdisco:', 'ipfs:', 'ipn:', 'ipns:', 'ipp:', 'ipps:', 'irc:', 'irc6:', 'ircs:', 'iris:', 'iris.beep:', 'iris.lwz:', 'iris.xpc:', 'iris.xpcs:', 'isostore:', 'itms:', 'jabber:', 'jar:', 'jms:', 'keyparc:', 'lastfm:', 'lbry:', 'ldap:', 'ldaps:', 'leaptofrogans:', 'lid:', 'linkid:', 'lorawan:', 'lpa:', 'lvlt:', 'machineProvisioningProgressReporter:', 'magnet:', 'mailserver:', 'mailto:', 'maps:', 'market:', 'matrix:', 'message:', 'microsoft.windows.camera:', 'microsoft.windows.camera.multipicker:', 'microsoft.windows.camera.picker:', 'mid:', 'mms:', 'modem:', 'mongodb:', 'moz:', 'mqtt:', 'mqtts:', 'ms-access:', 'ms-appinstaller:', 'ms-browser-extension:', 'ms-calculator:', 'ms-drive-to:', 'ms-enrollment:', 'ms-excel:', 'ms-eyecontrolspeech:', 'ms-gamebarservices:', 'ms-gamingoverlay:', 'ms-getoffice:', 'ms-help:', 'ms-infopath:', 'ms-inputapp:', 'ms-launchremotedesktop:', 'ms-lockscreencomponent-config:', 'ms-media-stream-id:', 'ms-meetnow:', 'ms-mixedrealitycapture:', 'ms-mobileplans:', 'ms-newsandinterests:', 'ms-officeapp:', 'ms-people:', 'ms-personacard:', 'ms-powerpoint:', 'ms-project:', 'ms-publisher:', 'ms-recall:', 'ms-remotedesktop:', 'ms-remotedesktop-launch:', 'ms-restoretabcompanion:', 'ms-screenclip:', 'ms-screensketch:', 'ms-search:', 'ms-search-repair:', 'ms-secondary-screen-controller:', 'ms-secondary-screen-setup:', 'ms-settings:', 'ms-settings-airplanemode:', 'ms-settings-bluetooth:', 'ms-settings-camera:', 'ms-settings-cellular:', 'ms-settings-cloudstorage:', 'ms-settings-connectabledevices:', 'ms-settings-displays-topology:', 'ms-settings-emailandaccounts:', 'ms-settings-language:', 'ms-settings-location:', 'ms-settings-lock:', 'ms-settings-nfctransactions:', 'ms-settings-notifications:', 'ms-settings-power:', 'ms-settings-privacy:', 'ms-settings-proximity:', 'ms-settings-screenrotation:', 'ms-settings-wifi:', 'ms-settings-workplace:', 'ms-spd:', 'ms-stickers:', 'ms-sttoverlay:', 'ms-transit-to:', 'ms-useractivityset:', 'ms-uup:', 'ms-virtualtouchpad:', 'ms-visio:', 'ms-walk-to:', 'ms-whiteboard:', 'ms-whiteboard-cmd:', 'ms-widgetboard:', 'ms-widgets:', 'ms-word:', 'msnim:', 'msrp:', 'msrps:', 'mss:', 'mt:', 'mtqp:', 'mtrust:', 'mumble:', 'mupdate:', 'mvn:', 'mvrp:', 'mvrps:', 'news:', 'nfs:', 'ni:', 'nih:', 'nntp:', 'notes:', 'num:', 'ocf:', 'oid:', 'onenote:', 'onenote-cmd:', 'opaquelocktoken:', 'openid:', 'openpgp4fpr:', 'otpauth:', 'p1:', 'pack:', 'palm:', 'paparazzi:', 'payment:', 'payto:', 'pkcs11:', 'platform:', 'pop:', 'pres:', 'prospero:', 'proxy:', 'psyc:', 'pttp:', 'pwid:', 'qb:', 'query:', 'quic-transport:', 'redis:', 'rediss:', 'reload:', 'res:', 'resource:', 'rmi:', 'rsync:', 'rtmfp:', 'rtmp:', 'rtsp:', 'rtsps:', 'rtspu:', 'sarif:', 'secondlife:', 'secret-token:', 'service:', 'session:', 'sftp:', 'sgn:', 'shc:', 'shelter:', 'shttp (OBSOLETE):', 'sieve:', 'simpleledger:', 'simplex:', 'sip:', 'sips:', 'skype:', 'smb:', 'smp:', 'sms:', 'smtp:', 'snews:', 'snmp:', 'soap.beep:', 'soap.beeps:', 'soldat:', 'spacify:', 'spiffe:', 'spotify:', 'ssb:', 'ssh:', 'starknet:', 'steam:', 'stun:', 'stuns:', 'submit:', 'svn:', 'swh:', 'swid:', 'swidpath:', 'tag:', 'taler:', 'teamspeak:', 'teapot:', 'teapots:', 'tel:', 'teliaeid:', 'telnet:', 'tftp:', 'things:', 'thismessage:', 'thzp:', 'tip:', 'tn3270:', 'tool:', 'turn:', 'turns:', 'tv:', 'udp:', 'unreal:', 'upn:', 'upt:', 'urn:', 'ut2004:', 'uuid-in-package:', 'v-event:', 'vemmi:', 'ventrilo:', 'ves:', 'videotex:', 'view-source:', 'vnc:', 'vscode:', 'vscode-insiders:', 'vsls:', 'w3:', 'wais:', 'wasm:', 'wasm-js:', 'wcr:', 'web+ap:', 'web3:', 'webcal:', 'wifi:', 'wpid:', 'ws:', 'wss:', 'wtai:', 'wyciwyg:', 'xcompute:', 'xcon:', 'xcon-userid:', 'xfire:', 'xftp:', 'xmlrpc.beep:', 'xmlrpc.beeps:', 'xmpp:', 'xrcp:', 'xri:', 'ymsgr:', 'z39.50:', 'z39.50r:', 'z39.50s:', '#']
 
@@ -264,6 +264,7 @@ try:
   `url` varchar(2048) NOT NULL,
   `timescraped` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `content` mediumtext NOT NULL,
+  `title` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;""")
@@ -469,18 +470,31 @@ while (len(tocrawl) > 0):
       if (cfg["debug"] == "yes"):
         print("Found non utf-8 content on page: " + url)
     
-    if ((not stop) and (len(page.text) > 0)):
+    soup = BeautifulSoup(page.text, "lxml")
+    content = soup
+    
+    # Get the first title we find.
+    title = content.find("title").text
+    
+    if ((title == "") or (title == None)):
+      title = "Untitled Webpage"
+    
+    for bad in content(["script", "style"]):
+      content.extract()
+      
+    content = content.get_text()
+    
+    if ((not stop) and (len(content) > 0)):
       # Add the page to the database.
-      insertquery = "REPLACE INTO pages (url, content) VALUES (?, ?)"
+      insertquery = "REPLACE INTO pages (url, content, title) VALUES (?, ?, ?)"
       try:
-        db.execute(insertquery, (url[:2048], page.text[:16777215]))
+        db.execute(insertquery, (url[:2048], content[:16777215], title[:60]))
         conn.commit()
       except mariadb.Error as e:
         if (cfg["debug"] == "yes"):
           print("Database Error: " + str(e))
         conn.rollback()
       # Get all of the links from the page.
-      soup = BeautifulSoup(page.text, "lxml")
       links = soup.find_all("a")
       for link in links:
         if not link.get("href"):
@@ -505,7 +519,7 @@ while (len(tocrawl) > 0):
                 conn.rollback()
             else:
               print("Discarding URL for being too long.")
-        elif (blacklisted):
+        elif (blacklisted) and (cfg["debug"] == "yes"):
           print("Skipping blacklisted link type. Link: " + link["href"])
         # Relative links.
         else:
