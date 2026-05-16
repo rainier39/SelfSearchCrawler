@@ -474,7 +474,10 @@ while (len(tocrawl) > 0):
     content = soup
     
     # Get the first title we find.
-    title = content.find("title").text
+    try:
+      title = content.find("title").text
+    except:
+      title = None
     
     if ((title == "") or (title == None)):
       title = "Untitled Webpage"
